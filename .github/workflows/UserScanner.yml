@@ -1,0 +1,83 @@
+name: User Scanner lookup
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI or API.
+on:
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      username:
+        # Friendly description to be shown in the UI instead of 'username'
+        description: 'Username to check with user-scanner'
+        # Default value if no value is explicitly provided
+        default: 'exampleuser'
+        # Input does not have to be provided if only scanning an email
+        required: false
+        # The data type of the input
+        type: string
+
+      email:
+        # Friendly description to be shown in the UI instead of 'email'
+        description: 'Email address to check with user-scanner'
+        # Default value if no value is explicitly provided
+        default: 'example@example.com'
+        # Input does not have to be provided if only scanning a username
+        required: false
+        # The data type of the input
+        type: string
+
+      verbose:
+        description: 'Show URLs checked by user-scanner'
+        default: false
+        required: false
+        type: boolean
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "user-scanner"
+  user-scanner:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Set up Python environment
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+        cache: 'pip'
+
+    # Install user-scanner
+    - name: Install user-scanner
+      run: |
+        python -m pip install --upgrade pip
+        pip install user-scanner
+
+    # Echo Inputs
+    - name: Check input
+      run: |
+        echo "Username: ${{ github.event.inputs.username }}"
+        echo "Email: ${{ github.event.inputs.email }}"
+        echo "Verbose: ${{ github.event.inputs.verbose }}"
+
+    # Run user-scanner against the provided username
+    - name: Run user-scanner username lookup
+      if: ${{ github.event.inputs.username != '' }}
+      run: |
+        if [ "${{ github.event.inputs.verbose }}" = "true" ]; then
+          user-scanner -v -u "${{ github.event.inputs.username }}"
+        else
+          user-scanner -u "${{ github.event.inputs.username }}"
+        fi
+
+    # Run user-scanner against the provided email address
+    - name: Run user-scanner email lookup
+      if: ${{ github.event.inputs.email != '' }}
+      run: |
+        if [ "${{ github.event.inputs.verbose }}" = "true" ]; then
+          user-scanner -v -e "${{ github.event.inputs.email }}"
+        else
+          user-scanner -e "${{ github.event.inputs.email }}"
+        fi
